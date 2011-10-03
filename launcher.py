@@ -1,6 +1,7 @@
 import os
 import wx
 import hashlib
+import subprocess
 
 from wx.lib.wordwrap import wordwrap
 
@@ -17,14 +18,16 @@ class _AppInfoPanel(wx.Panel):
     def __init__(self, parent, folder):
         wx.Panel.__init__(self, parent=parent, id=wx.ID_ANY)
 
+        self.folder = folder
+
         # Static text with the name of the App folder.
         folderBox = wx.StaticBox(self, wx.ID_ANY)
         folderBoxSizer = wx.StaticBoxSizer(folderBox, wx.VERTICAL)
-        folderBoxSizer.Add( wx.StaticText(self, wx.ID_ANY, folder), 0, wx.EXPAND | wx.ALL, 1)
+        folderBoxSizer.Add( wx.StaticText(self, wx.ID_ANY, self.folder), 0, wx.EXPAND | wx.ALL, 1)
 
         # Create a TextCtrl box containing the README file text.
         try:
-            with open(os.path.join(folder, "README"), 'r') as f:
+            with open(os.path.join(self.folder, "README"), 'r') as f:
                 file_data = f.read()
         except IOError:
             file_data = "[Couldn't open README.]"
@@ -40,16 +43,20 @@ class _AppInfoPanel(wx.Panel):
         # File list convention - first file is the one to call.
 
         filesText = []
+        self.script_file = None
 
         try:
-            with open(os.path.join(folder, "FILES.txt"), 'rb') as f:
+            with open(os.path.join(self.folder, "FILES.txt"), 'rb') as f:
                 file_data = f.readlines()
                 for line in file_data:
                     # Remove the trailing newline, and split the line into a list called 'record'
                     record = line.rstrip("\r\n").split(' ')
                     if len(record) == 2:
+                        # The first line with two items is assumed to be the line with the script filename.
+                        if self.script_file == None :
+                            self.script_file = record[0]
                         md5 = hashlib.md5()
-                        with open(os.path.join(folder, record[0] ),'rb') as g:
+                        with open(os.path.join(self.folder, record[0] ),'rb') as g:
                             for chunk in iter(lambda: g.read(8192), ''):
                                 md5.update(chunk)
                         if md5.hexdigest() == record[1]:
@@ -61,25 +68,32 @@ class _AppInfoPanel(wx.Panel):
         except IOError:
             pass
 
+        print self.script_file
+
         filesTextCtrl = wx.TextCtrl(self, wx.ID_ANY, "".join("%s" % (s) for s in filesText), size=(600,100),
                                     style=(wx.TE_MULTILINE | wx.TE_RICH2 | wx.TE_READONLY))
         filesBox = wx.StaticBox(self, wx.ID_ANY, "FILES")
         filesSizer = wx.StaticBoxSizer(filesBox, wx.VERTICAL)
         filesSizer.Add(filesTextCtrl, 0, wx.TOP | wx.LEFT, 10)
 
-        ##############################################
+        # Create a button which launches the App.
+        b = wx.Button(self, wx.ID_ANY, "Launch", (20,20))
+        self.Bind(wx.EVT_BUTTON, self.OnLaunchButton, b)
+        b.SetDefault()
+        b.SetSize(b.GetBestSize())
 
-        # Create a button which launches the App. Will need to remember the ID for each instance? Or can 'self' instantiation handle it?
-        # May need to cd to this folder, launch, then "cd .." ?
-
-            
         # This is the sizer which ties together the other items, vertically.
         border = wx.BoxSizer(wx.VERTICAL)
         border.Add(folderBoxSizer, 0, wx.EXPAND | wx.ALL, 1)
         border.Add(readmeSizer, 0, wx.EXPAND | wx.ALL, 0)
         border.Add(filesSizer, 0, wx.EXPAND | wx.ALL, 0)
+        border.Add(b, 0, wx.ALIGN_LEFT, 0)
 
         self.SetSizer(border)
+    #----------------------------------------------------------------------
+    def OnLaunchButton(self, event):
+        if self.script_file != None:
+            subprocess.Popen( "python " +  os.path.join(self.folder, self.script_file))
     #----------------------------------------------------------------------
 ##########################################################################################
 class _NotebookSetup(wx.Notebook):
