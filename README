@@ -1,0 +1,26 @@
+Launcher is a Python application which can display information about other
+applications, and can update and launch them.
+
+It must be called from the desired parent folder of the applications to be
+launched (i.e., "cd" to the desired directory and then invoke launcher).
+
+For every folder in the current working directory, a tab will be created.
+
+On those tabs :
+
+  If a file named "README" exists, it will be displayed.
+
+  It looks for a file called "FILES.txt" which contains the expected files,
+  and their MD5 hash. If the MD5 hash calculated does not match, it will display
+  the expected value in square brackets (which can used to update "FILES.txt").
+
+[TODO] Add button to launch the first file in "FILES.txt", assuming it is a Python
+script file.
+
+[TODO] Will have the capability to update the application files from its github
+repository, later. Add button (greyed, if up-to-date already?).
+
+[TODO] Future versions should allow selection of the desired parent folder;
+delete any old tabs and create new ones, when this occurs. Can this program
+simply launch a copy of itself in the new folder, and terminate it old self?
+
